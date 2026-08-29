@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Evolución de indicadores</title>
+<style>
+  :root{
+    --bg: #000000;
+    --bg-panel: #040f08;
+    --line: #123a1f;
+    --ink: #39ff6a;
+    --ink-dim: #1f8a45;
+    --accent: #00ff66;
+    --accent-dim: #00ff6633;
+    --grid: #145c2c;
+    --up: #39ff6a;
+    --down: #ff3b4e;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 15% 10%, #06210f 0%, transparent 45%),
+      radial-gradient(circle at 85% 90%, #051a0c 0%, transparent 45%),
+      var(--bg);
+    color: var(--ink);
+    font-family: 'Courier New', ui-monospace, monospace;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding: 32px 16px;
+  }
+
+  .card{
+    width: 100%;
+    max-width: 620px;
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 36px 32px 28px;
+    position: relative;
+    box-shadow: 0 0 0 1px rgba(0,255,102,.06), 0 0 40px rgba(0,255,102,.05), inset 0 0 60px rgba(0,255,102,.03);
+    overflow: hidden;
+  }
+  /* leve textura de "scanlines" para reforzar el look terminal/hacker sin restar legibilidad */
+  .card::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0,255,102,.035) 0px,
+      rgba(0,255,102,.035) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    z-index: 0;
+  }
+  .card > *{ position: relative; z-index: 1; }
+
+  .eyebrow{
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    margin: 0 0 6px;
+  }
+
+  h1{
+    font-family: 'Courier New', ui-monospace, monospace;
+    font-weight: 700;
+    font-size: 26px;
+    margin: 0 0 4px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    text-shadow: 0 0 8px var(--accent-dim), 0 0 18px rgba(0,255,102,.25);
+  }
+
+  .sub{
+    color: var(--ink-dim);
+    font-size: 13px;
+    margin: 0 0 20px;
+  }
+
+  /* --- tabs --- */
+  .tabs{
+    display:flex;
+    gap: 4px;
+    margin-bottom: 22px;
+    border-bottom: 1px solid var(--line);
+  }
+  .tab{
+    background: transparent;
+    border: none;
+    color: var(--ink-dim);
+    font-family: inherit;
+    font-size: 13px;
+    letter-spacing: .5px;
+    padding: 8px 4px 10px;
+    cursor: pointer;
+    position: relative;
+    margin-right: 22px;
+  }
+  .tab.active{ color: var(--ink); }
+  .tab.active::after{
+    content:'';
+    position:absolute;
+    left:0; right:0; bottom:-1px;
+    height:2px;
+    background: var(--accent);
+  }
+
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  /* --- nav (shared style) --- */
+  .nav{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap: 18px;
+    margin-bottom: 6px;
+  }
+  .nav button{
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition: border-color .15s ease, color .15s ease, transform .1s ease;
+  }
+  .nav button:hover{ border-color: var(--accent); color: var(--accent); }
+  .nav button:active{ transform: scale(0.94); }
+  .nav button:disabled{ opacity: .25; cursor: default; }
+  .nav button:disabled:hover{ border-color: var(--line); color: var(--ink); }
+
+  .label{
+    min-width: 140px;
+    text-align:center;
+    font-family: 'Courier New', ui-monospace, monospace;
+    font-size: 20px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-shadow: 0 0 6px rgba(0,255,102,.2);
+  }
+  .label .n{ color: var(--accent); text-shadow: 0 0 8px var(--accent-dim); }
+
+  .dots{
+    display:flex;
+    justify-content:center;
+    gap: 7px;
+    margin-bottom: 14px;
+  }
+  .dots span{
+    width:6px; height:6px; border-radius:50%;
+    background: var(--line);
+    transition: background .2s ease;
+  }
+  .dots span.active{ background: var(--accent); }
+
+  .trend{
+    text-align:center;
+    font-size: 12px;
+    color: var(--ink-dim);
+    margin-bottom: 4px;
+    letter-spacing: .5px;
+    min-height: 16px;
+  }
+  .trend .arrow{ font-weight:bold; }
+  .trend .arrow.up{ color: var(--up); }
+  .trend .arrow.down{ color: var(--down); }
+  .trend .arrow.flat{ color: var(--ink-dim); }
+
+  .chart-wrap{
+    display:flex;
+    justify-content:center;
+    margin: 6px 0 8px;
+  }
+
+  svg{ overflow: visible; }
+
+  .grid-ring, .grid-h{ fill:none; stroke: var(--grid); stroke-width:1; }
+  .spoke{ stroke: var(--grid); stroke-width:1; }
+  .grid-v{ stroke: var(--grid); stroke-width:1; stroke-dasharray: 3 4; }
+
+  .shape{
+    fill: var(--accent-dim);
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    transition: d .45s cubic-bezier(.4,0,.2,1);
+  }
+  .vertex{
+    fill: var(--bg-panel);
+    stroke: var(--accent);
+    stroke-width: 2;
+    transition: cx .45s cubic-bezier(.4,0,.2,1), cy .45s cubic-bezier(.4,0,.2,1);
+  }
+
+  .line-path{
+    fill:none;
+    stroke: var(--accent);
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    transition: d .45s cubic-bezier(.4,0,.2,1);
+  }
+  .area-path{
+    fill: var(--accent-dim);
+    stroke: none;
+    transition: d .45s cubic-bezier(.4,0,.2,1);
+  }
+  .pt{
+    fill: var(--bg-panel);
+    stroke: var(--accent);
+    stroke-width: 2.5;
+    transition: cx .45s cubic-bezier(.4,0,.2,1), cy .45s cubic-bezier(.4,0,.2,1);
+  }
+  .pt-value{
+    font-size: 13px;
+    font-weight: bold;
+    fill: var(--ink);
+    font-family: 'Courier New', monospace;
+    text-anchor: middle;
+  }
+
+  .axis-label{ font-size: 12px; fill: var(--ink-dim); font-family: 'Courier New', monospace; }
+  .axis-value{ font-size: 12px; font-weight: bold; fill: var(--accent); font-family: 'Courier New', monospace; }
+  .scale-label{ font-size: 9px; fill: var(--ink-dim); opacity: .55; }
+  .x-label{ font-size: 12px; fill: var(--ink-dim); text-anchor: middle; font-family: 'Courier New', monospace; }
+  .y-label{ font-size: 10px; fill: var(--ink-dim); opacity: .55; text-anchor: end; }
+
+  .footer-note{
+    text-align:center;
+    color: var(--ink-dim);
+    font-size: 11px;
+    margin-top: 10px;
+    letter-spacing: .5px;
+  }
+  kbd{
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-size: 10px;
+  }
+
+  /* --- editable table --- */
+  .editor{
+    margin-top: 30px;
+    border-top: 1px solid var(--line);
+    padding-top: 22px;
+  }
+  .editor-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom: 14px;
+  }
+  .editor-head h2{
+    font-family: 'Courier New', ui-monospace, monospace;
+    font-weight: 700;
+    font-size: 16px;
+    margin: 0;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .editor-head p{
+    margin: 2px 0 0;
+    font-size: 11px;
+    color: var(--ink-dim);
+  }
+
+  .table-scroll{ overflow-x: auto; }
+
+  table{
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 12px;
+  }
+  th, td{
+    padding: 6px 8px;
+    text-align: center;
+    border: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  th{
+    color: var(--ink-dim);
+    font-weight: normal;
+    letter-spacing: .5px;
+    background: rgba(255,255,255,0.02);
+  }
+  th:first-child, td:first-child{
+    text-align: left;
+    color: var(--ink-dim);
+  }
+
+  input.cell{
+    width: 44px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--accent);
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 3px;
+    padding: 3px 2px;
+  }
+  input.cell:hover{ border-color: var(--line); }
+  input.cell:focus{
+    outline: none;
+    border-color: var(--accent);
+    background: rgba(255,181,69,0.08);
+  }
+  /* remove spinners for cleaner look */
+  input.cell::-webkit-outer-spin-button,
+  input.cell::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  input.cell[type=number]{ -moz-appearance: textfield; }
+
+  .editor-actions{
+    display:flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .editor-actions button{
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--ink-dim);
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: .5px;
+    padding: 7px 14px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: border-color .15s ease, color .15s ease;
+  }
+  .editor-actions button:hover{
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .save-note{
+    text-align:center;
+    font-size: 10px;
+    color: var(--ink-dim);
+    margin-top: 10px;
+    opacity: 0;
+    transition: opacity .3s ease;
+  }
+  .save-note.show{ opacity: .7; }
+
+  /* --- vista 3D --- */
+  .canvas3d-wrap{
+    position: relative;
+    width: 480px;
+    max-width: 100%;
+    height: 480px;
+    margin: 6px auto 8px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: grab;
+    touch-action: none;
+  }
+  .canvas3d-wrap:active{ cursor: grabbing; }
+  .canvas3d-wrap canvas{ display:block; }
+
+  .label3d{
+    position: absolute;
+    transform: translate(-50%, -50%);
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    font-weight: bold;
+    color: var(--ink);
+    pointer-events: none;
+    white-space: nowrap;
+    text-shadow: 0 0 4px var(--bg-panel), 0 0 4px var(--bg-panel), 0 0 8px var(--bg-panel);
+    transition: opacity .18s ease, transform .18s ease;
+    z-index: 2;
+  }
+  .label3d.year-tag{
+    color: var(--accent);
+    font-family: 'Courier New', ui-monospace, monospace;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-shadow: 0 0 6px var(--accent-dim), 0 0 12px rgba(0,255,102,.3);
+    z-index: 3;
+  }
+  .label3d.axis-tag{
+    color: var(--ink);
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: #000;
+    border: 1px solid var(--accent);
+    padding: 2px 6px;
+    border-radius: 3px;
+    box-shadow: 0 0 6px rgba(0,255,102,.35), inset 0 0 6px rgba(0,255,102,.15);
+    z-index: 3;
+  }
+  /* chip de valor: fondo negro sólido + borde y texto verde brillante, para que */
+  /* contraste tanto contra el fondo oscuro como contra la propia figura verde   */
+  .label3d.value-tag{
+    font-size: 11px;
+    color: var(--accent);
+    background: #000;
+    border: 1px solid var(--accent);
+    padding: 1px 6px;
+    border-radius: 3px;
+    text-shadow: 0 0 4px rgba(0,255,102,.6);
+    font-weight: 700;
+    box-shadow: 0 0 8px rgba(0,255,102,.55), inset 0 0 4px rgba(0,255,102,.15);
+  }
+  .label3d.value-tag.dimmed{
+    opacity: .28 !important;
+  }
+
+  .controls3d{
+    display:flex;
+    flex-wrap: wrap;
+    justify-content:center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .controls3d button{
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--ink-dim);
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: .5px;
+    padding: 7px 14px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: border-color .15s ease, color .15s ease, background .15s ease;
+    display:flex;
+    align-items:center;
+    gap: 6px;
+  }
+  .controls3d button.active{
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .controls3d button:hover{ border-color: var(--accent); color: var(--accent); }
+
+  .legend3d{
+    display:flex;
+    justify-content:center;
+    gap: 16px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+  }
+  .legend3d .item{
+    display:flex;
+    align-items:center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--ink-dim);
+    padding: 3px 7px;
+    border-radius: 3px;
+    border: 1px solid transparent;
+    transition: border-color .15s ease, color .15s ease, background .15s ease;
+  }
+  .legend3d .item:hover{ color: var(--ink); }
+  .legend3d .item.active{
+    color: var(--ink);
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .legend3d .item.hint3d{
+    color: var(--ink-dim);
+    opacity: .6;
+    font-style: italic;
+    cursor: default;
+    padding: 3px 0;
+  }
+  .legend3d .swatch{
+    width: 10px; height: 10px; border-radius: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <p class="eyebrow">Serie 2023 — 2026</p>
+  <h1 id="mainTitle">Evolución de indicadores</h1>
+  <p class="sub">Cinco variables, cuatro años, escala 0–10. Editá la tabla y los tres gráficos se actualizan solos.</p>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="pentagon">Por año</button>
+    <button class="tab" data-tab="line">En el tiempo</button>
+    <button class="tab" data-tab="cyl3d">3D</button>
+  </div>
+
+  <!-- ===== VISTA PENTÁGONO ===== -->
+  <div class="view active" id="view-pentagon">
+    <div class="nav">
+      <button id="prevYearBtn" aria-label="Año anterior">&#8592;</button>
+      <div class="label"><span class="n" id="yearNum">01</span> · <span id="yearName">Año 1</span></div>
+      <button id="nextYearBtn" aria-label="Año siguiente">&#8594;</button>
+    </div>
+    <div class="dots" id="yearDots"></div>
+    <div class="chart-wrap">
+      <svg id="pentaChart" width="440" height="440" viewBox="0 0 440 440"></svg>
+    </div>
+    <p class="footer-note">Usá <kbd>&#8592;</kbd> <kbd>&#8594;</kbd> para cambiar de año</p>
+  </div>
+
+  <!-- ===== VISTA LÍNEA DE TIEMPO ===== -->
+  <div class="view" id="view-line">
+    <div class="nav">
+      <button id="prevValBtn" aria-label="Valor anterior">&#8592;</button>
+      <div class="label"><span class="n" id="valNum">01</span> · <span id="valName">Valor 1</span></div>
+      <button id="nextValBtn" aria-label="Valor siguiente">&#8594;</button>
+    </div>
+    <div class="dots" id="valDots"></div>
+    <p class="trend" id="trend"></p>
+    <div class="chart-wrap">
+      <svg id="lineChart" width="480" height="300" viewBox="0 0 480 300"></svg>
+    </div>
+    <p class="footer-note">Usá <kbd>&#8592;</kbd> <kbd>&#8594;</kbd> para cambiar de variable</p>
+  </div>
+
+  <!-- ===== VISTA 3D ===== -->
+  <div class="view" id="view-cyl3d">
+    <div class="legend3d" id="legend3d"></div>
+    <div class="canvas3d-wrap" id="canvas3dWrap"></div>
+    <div class="controls3d">
+      <button id="toggleRotateBtn">⏸ Pausar giro</button>
+      <button id="replayBuildBtn">↻ Reconstruir</button>
+      <button id="toggleNumbersBtn"># Ocultar números</button>
+      <button id="view2dYearBtn">▭ Vista: por año</button>
+      <button id="view2dTimeBtn">📈 Vista: en el tiempo</button>
+      <button id="viewFreeBtn">↺ Vista libre</button>
+    </div>
+    <p class="footer-note">El tubo gira solo · arrastrá con el mouse para mover la cámara · las vistas 2D pausan el giro</p>
+  </div>
+
+  <!-- ===== TABLA EDITABLE ===== -->
+  <div class="editor">
+    <div class="editor-head">
+      <div>
+        <h2>Datos</h2>
+        <p>Tocá cualquier casillero (0–10) y ambos gráficos se actualizan solos.</p>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table id="dataTable"></table>
+    </div>
+    <div class="editor-actions">
+      <button id="resetBtn">Restaurar valores originales</button>
+    </div>
+    <p class="save-note" id="saveNote">Cambios guardados en este navegador</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+
+  const YEARS = ["Año 1", "Año 2", "Año 3", "Año 4"];
+  const VALUES = ["Valor 1", "Valor 2", "Valor 3", "Valor 4", "Valor 5"];
+  const MAX = 10;
+  const STORAGE_KEY = "infografia_datos_v1";
+
+  // datos originales por año -> array de 5 valores (Valor1..Valor5)
+  const DEFAULT_DATA = [
+    [1, 2, 0, 3, 1], // Año 1
+    [2, 2, 1, 4, 2], // Año 2
+    [3, 5, 2, 4, 4], // Año 3
+    [4, 7, 5, 8, 6], // Año 4
+  ];
+
+  function loadData(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return DEFAULT_DATA.map(r => r.slice());
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length === YEARS.length &&
+          parsed.every(row => Array.isArray(row) && row.length === VALUES.length)){
+        return parsed;
+      }
+      return DEFAULT_DATA.map(r => r.slice());
+    }catch(e){
+      return DEFAULT_DATA.map(r => r.slice());
+    }
+  }
+
+  function saveData(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      flashSaved();
+    }catch(e){ /* ignore */ }
+  }
+
+  let saveTimeout;
+  function flashSaved(){
+    const note = document.getElementById('saveNote');
+    note.classList.add('show');
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => note.classList.remove('show'), 1400);
+  }
+
+  let data = loadData(); // data[yearIndex][valueIndex]
+
+  function clamp(v){
+    v = Number(v);
+    if (isNaN(v)) v = 0;
+    return Math.max(0, Math.min(MAX, v));
+  }
+
+  // ===================== TABS =====================
+  const tabs = document.querySelectorAll('.tab');
+  const views = {
+    pentagon: document.getElementById('view-pentagon'),
+    line: document.getElementById('view-line'),
+    cyl3d: document.getElementById('view-cyl3d'),
+  };
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      Object.values(views).forEach(v => v.classList.remove('active'));
+      views[tab.dataset.tab].classList.add('active');
+    });
+  });
+
+  // ===================== PENTÁGONO =====================
+  const svgns = "http://www.w3.org/2000/svg";
+  function el(tag, attrs){
+    const e = document.createElementNS(svgns, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  const pentaSvg = document.getElementById('pentaChart');
+  const yearNumEl = document.getElementById('yearNum');
+  const yearNameEl = document.getElementById('yearName');
+  const yearDotsEl = document.getElementById('yearDots');
+  const prevYearBtn = document.getElementById('prevYearBtn');
+  const nextYearBtn = document.getElementById('nextYearBtn');
+
+  const N = 5;
+  const pcx = 220, pcy = 210, R = 150;
+  let yearIdx = 0;
+
+  function angleFor(i){ return (Math.PI * 2 * i / N) - Math.PI/2; }
+  function pointAt(i, value){
+    const r = (value / MAX) * R;
+    const a = angleFor(i);
+    return { x: pcx + r * Math.cos(a), y: pcy + r * Math.sin(a) };
+  }
+  function polygonPoints(values){ return values.map((v,i) => pointAt(i, v)); }
+  function pointsToPath(pts){
+    return pts.map((p,i) => (i===0?'M':'L') + p.x.toFixed(2) + ',' + p.y.toFixed(2)).join(' ') + ' Z';
+  }
+
+  const pentaGrid = el('g', {});
+  pentaSvg.appendChild(pentaGrid);
+  [2,4,6,8,10].forEach(step => {
+    const r = (step/MAX) * R;
+    const pts = [];
+    for (let i=0;i<N;i++){
+      const a = angleFor(i);
+      pts.push({x: pcx + r*Math.cos(a), y: pcy + r*Math.sin(a)});
+    }
+    pentaGrid.appendChild(el('polygon', {
+      points: pts.map(p=>p.x.toFixed(2)+','+p.y.toFixed(2)).join(' '),
+      class: 'grid-ring'
+    }));
+  });
+  for (let i=0;i<N;i++){
+    const a = angleFor(i);
+    const outer = { x: pcx + R*Math.cos(a), y: pcy + R*Math.sin(a) };
+    pentaGrid.appendChild(el('line', { x1: pcx, y1: pcy, x2: outer.x.toFixed(2), y2: outer.y.toFixed(2), class:'spoke' }));
+  }
+  [2,4,6,8,10].forEach(step=>{
+    const r = (step/MAX) * R;
+    pentaGrid.appendChild(el('text', { x: pcx + 6, y: (pcy - r + 3).toFixed(2), class:'scale-label' })).textContent = step;
+  });
+
+  const pentaLabelEls = [];
+  const pentaValueEls = [];
+  for (let i=0;i<N;i++){
+    const a = angleFor(i);
+    const lx = pcx + (R+34) * Math.cos(a);
+    const ly = pcy + (R+34) * Math.sin(a);
+    let anchor = 'middle';
+    if (Math.cos(a) > 0.3) anchor = 'start';
+    else if (Math.cos(a) < -0.3) anchor = 'end';
+
+    const t = el('text', { x: lx.toFixed(2), y: ly.toFixed(2), class: 'axis-label', 'text-anchor': anchor, 'dominant-baseline':'middle' });
+    t.textContent = VALUES[i];
+    pentaSvg.appendChild(t);
+    pentaLabelEls.push(t);
+
+    const vt = el('text', { x: lx.toFixed(2), y: (ly + 15).toFixed(2), class: 'axis-value', 'text-anchor': anchor, 'dominant-baseline':'middle' });
+    pentaSvg.appendChild(vt);
+    pentaValueEls.push(vt);
+  }
+
+  const pentaShape = el('path', { class: 'shape' });
+  pentaSvg.appendChild(pentaShape);
+  const pentaVertices = [];
+  for (let i=0;i<N;i++){
+    const v = el('circle', { r: 4.5, class: 'vertex' });
+    pentaSvg.appendChild(v);
+    pentaVertices.push(v);
+  }
+  YEARS.forEach(() => yearDotsEl.appendChild(document.createElement('span')));
+
+  function renderPentagon(){
+    yearNumEl.textContent = String(yearIdx+1).padStart(2,'0');
+    yearNameEl.textContent = YEARS[yearIdx];
+    const values = data[yearIdx];
+    const pts = polygonPoints(values);
+    pentaShape.setAttribute('d', pointsToPath(pts));
+    pts.forEach((p, i) => {
+      pentaVertices[i].setAttribute('cx', p.x.toFixed(2));
+      pentaVertices[i].setAttribute('cy', p.y.toFixed(2));
+      pentaValueEls[i].textContent = values[i];
+    });
+    [...yearDotsEl.children].forEach((dot, i) => dot.classList.toggle('active', i === yearIdx));
+    prevYearBtn.disabled = yearIdx === 0;
+    nextYearBtn.disabled = yearIdx === YEARS.length - 1;
+  }
+  function goYear(delta){
+    const next = yearIdx + delta;
+    if (next < 0 || next >= YEARS.length) return;
+    yearIdx = next;
+    renderPentagon();
+  }
+  prevYearBtn.addEventListener('click', () => goYear(-1));
+  nextYearBtn.addEventListener('click', () => goYear(1));
+
+  // ===================== LÍNEA DE TIEMPO =====================
+  const lineSvg = document.getElementById('lineChart');
+  const valNumEl = document.getElementById('valNum');
+  const valNameEl = document.getElementById('valName');
+  const valDotsEl = document.getElementById('valDots');
+  const trendEl = document.getElementById('trend');
+  const prevValBtn = document.getElementById('prevValBtn');
+  const nextValBtn = document.getElementById('nextValBtn');
+
+  const padL = 34, padR = 20, padT = 26, padB = 34;
+  const LW = 480, LH = 300;
+  const plotW = LW - padL - padR;
+  const plotH = LH - padT - padB;
+  let valIdx = 0;
+
+  function xFor(i){ return padL + (plotW * i / (YEARS.length - 1)); }
+  function yFor(v){ return padT + plotH - (plotH * v / MAX); }
+
+  const lineGrid = el('g', {});
+  lineSvg.appendChild(lineGrid);
+  [0,2,4,6,8,10].forEach(step => {
+    const y = yFor(step);
+    lineGrid.appendChild(el('line', { x1: padL, y1: y.toFixed(2), x2: LW - padR, y2: y.toFixed(2), class:'grid-h' }));
+    lineGrid.appendChild(el('text', { x: padL - 8, y: (y + 3).toFixed(2), class:'y-label' })).textContent = step;
+  });
+  YEARS.forEach((yr, i) => {
+    const x = xFor(i);
+    lineGrid.appendChild(el('line', { x1: x.toFixed(2), y1: padT, x2: x.toFixed(2), y2: LH - padB, class:'grid-v' }));
+    lineSvg.appendChild(el('text', { x: x.toFixed(2), y: LH - padB + 20, class:'x-label' })).textContent = yr;
+  });
+
+  const areaPath = el('path', { class: 'area-path' });
+  const linePath = el('path', { class: 'line-path' });
+  lineSvg.appendChild(areaPath);
+  lineSvg.appendChild(linePath);
+
+  const linePts = [];
+  const linePtLabels = [];
+  YEARS.forEach(() => {
+    const c = el('circle', { r: 5, class: 'pt' });
+    lineSvg.appendChild(c);
+    linePts.push(c);
+    const t = el('text', { class: 'pt-value' });
+    lineSvg.appendChild(t);
+    linePtLabels.push(t);
+  });
+  VALUES.forEach(() => valDotsEl.appendChild(document.createElement('span')));
+
+  function linePathD(pts){
+    return pts.map((p,i) => (i===0?'M':'L') + p.x.toFixed(2) + ',' + p.y.toFixed(2)).join(' ');
+  }
+  function areaPathD(pts){
+    const base = yFor(0);
+    let d = 'M' + pts[0].x.toFixed(2) + ',' + base.toFixed(2);
+    pts.forEach(p => d += ' L' + p.x.toFixed(2) + ',' + p.y.toFixed(2));
+    d += ' L' + pts[pts.length-1].x.toFixed(2) + ',' + base.toFixed(2) + ' Z';
+    return d;
+  }
+
+  function renderLine(){
+    valNumEl.textContent = String(valIdx+1).padStart(2,'0');
+    valNameEl.textContent = VALUES[valIdx];
+
+    const values = YEARS.map((_, yi) => data[yi][valIdx]);
+    const pts = values.map((v,i) => ({ x: xFor(i), y: yFor(v) }));
+
+    linePath.setAttribute('d', linePathD(pts));
+    areaPath.setAttribute('d', areaPathD(pts));
+
+    pts.forEach((p, i) => {
+      linePts[i].setAttribute('cx', p.x.toFixed(2));
+      linePts[i].setAttribute('cy', p.y.toFixed(2));
+      linePtLabels[i].setAttribute('x', p.x.toFixed(2));
+      linePtLabels[i].setAttribute('y', (p.y - 14).toFixed(2));
+      linePtLabels[i].textContent = values[i];
+    });
+
+    [...valDotsEl.children].forEach((dot, i) => dot.classList.toggle('active', i === valIdx));
+
+    const first = values[0];
+    const last = values[values.length - 1];
+    let arrowClass = 'flat', arrow = '→', word = 'se mantuvo estable';
+    if (last > first){ arrowClass = 'up'; arrow = '↑'; word = 'subió'; }
+    else if (last < first){ arrowClass = 'down'; arrow = '↓'; word = 'bajó'; }
+    trendEl.innerHTML = `${first} <span class="arrow ${arrowClass}">${arrow}</span> ${last} · ${word} en el período`;
+
+    prevValBtn.disabled = valIdx === 0;
+    nextValBtn.disabled = valIdx === VALUES.length - 1;
+  }
+  function goVal(delta){
+    const next = valIdx + delta;
+    if (next < 0 || next >= VALUES.length) return;
+    valIdx = next;
+    renderLine();
+  }
+  prevValBtn.addEventListener('click', () => goVal(-1));
+  nextValBtn.addEventListener('click', () => goVal(1));
+
+  document.addEventListener('keydown', (e) => {
+    const pentagonActive = views.pentagon.classList.contains('active');
+    if (e.key === 'ArrowLeft') pentagonActive ? goYear(-1) : goVal(-1);
+    if (e.key === 'ArrowRight') pentagonActive ? goYear(1) : goVal(1);
+  });
+
+  // ===================== VISTA 3D (cilindro pentagonal acostado) =====================
+  const RMAX3D = 130;
+  const LAYER_GAP = 62;
+  const COLOR_START = new THREE.Color(0x39ff6a); // mismo verde matrix brillante para todos los años,
+  const COLOR_END   = new THREE.Color(0x39ff6a); // así todo contrasta parejo contra el fondo oscuro
+
+  let scene3d, camera3d, renderer3d, group3d, labelWrap3d;
+  let segmentGroups = []; // una por tramo entre año i y año i+1
+  let ringGroups = [];    // outline + esferas por año
+  let vertexLabelEls = []; // {el, pos} - números, rotan con el objeto
+  let yearLabelEls = [];   // {el, pos} - Año1..Año4, quietos (no rotan)
+  let axisLabelEls = [];   // {el, pos} - Valor1..Valor5, rotan con el objeto
+  let isDragging3d = false, prevMouseX = 0, prevMouseY = 0;
+  let autoRotate3d = true;
+  let showValueNumbers3d = true; // números pegados a cada vértice; se pueden ocultar y dejar solo los que flotan alrededor
+  let currentView3d = 'free'; // 'free' | 'year' | 'time' — controla qué preset de cámara está activo
+  let inited3d = false;
+  let buildToken = 0; // para cancelar animaciones de reconstrucción viejas
+
+  // órbita de cámara controlada por el arrastre del mouse (independiente del giro del objeto)
+  const CAM_DISTANCE = 480;
+  const DEFAULT_CAM_THETA = -0.62; // negativo: Año 1 (x negativo) queda adelante-izquierda, Año 4 atrás-derecha
+  const DEFAULT_CAM_PHI = 0.30;    // ángulo de elevación
+  let camTheta = DEFAULT_CAM_THETA;
+  let camPhi = DEFAULT_CAM_PHI;
+  let camAnimTarget = null; // {theta, phi} — si está seteado, la cámara viaja suave hacia ahí cada frame
+
+  function updateCameraFromOrbit(){
+    const x = CAM_DISTANCE * Math.cos(camPhi) * Math.sin(camTheta);
+    const y = CAM_DISTANCE * Math.sin(camPhi);
+    const z = CAM_DISTANCE * Math.cos(camPhi) * Math.cos(camTheta);
+    camera3d.position.set(x, y, z);
+    camera3d.lookAt(0, 0, 0);
+  }
+
+  // lleva la cámara suavemente hacia un ángulo objetivo (usado por los presets de vista);
+  // se resuelve en animate3d(), un poco cada frame, así el cambio de perspectiva no es un salto brusco
+  function flyCameraTo(theta, phi){
+    camAnimTarget = { theta, phi };
+  }
+
+  function angle3d(i){ return (Math.PI * 2 * i / N) - Math.PI/2; }
+
+  function layerPositions(values){
+    // el eje del "tubo" es X (acostado); el pentágono vive en el plano Y-Z
+    return values.map((v, i) => {
+      const r = (v / MAX) * RMAX3D;
+      const a = angle3d(i);
+      return new THREE.Vector3(0, r * Math.cos(a), r * Math.sin(a));
+    });
+  }
+
+  let focusYear3d = -1; // -1 = mostrar todos los años a la vez
+
+  function buildLegend(){
+    const legend = document.getElementById('legend3d');
+    legend.innerHTML = '';
+    YEARS.forEach((y, i) => {
+      const t = i / (YEARS.length - 1);
+      const c = COLOR_START.clone().lerp(COLOR_END, t);
+      const item = document.createElement('div');
+      item.className = 'item' + (focusYear3d === i ? ' active' : '');
+      item.style.cursor = 'pointer';
+      const sw = document.createElement('span');
+      sw.className = 'swatch';
+      sw.style.background = '#' + c.getHexString();
+      item.appendChild(sw);
+      const txt = document.createElement('span');
+      txt.textContent = y;
+      item.appendChild(txt);
+      item.addEventListener('click', () => {
+        focusYear3d = (focusYear3d === i) ? -1 : i;
+        buildLegend();
+        applyFocus3d();
+      });
+      legend.appendChild(item);
+    });
+
+    const hint = document.createElement('div');
+    hint.className = 'item hint3d';
+    hint.textContent = focusYear3d === -1 ? '(tocá un año para aislarlo)' : '(tocá de nuevo para ver todos)';
+    legend.appendChild(hint);
+  }
+
+  // atenúa años y números que no son el año enfocado, para leer mejor un año a la vez;
+  // con foco en -1 (ninguno) se muestran todos los años con opacidad pareja
+  function applyFocus3d(){
+    ringGroups.forEach((g, i) => {
+      const on = focusYear3d === -1 || focusYear3d === i;
+      g.traverse(o => {
+        if (o.material){
+          o.material.transparent = true;
+          o.material.opacity = on ? 1 : 0.15;
+        }
+      });
+    });
+    segmentGroups.forEach((m, li) => {
+      const on = focusYear3d === -1 || focusYear3d === li || focusYear3d === li + 1;
+      m.material.opacity = on ? 0.8 : 0.08;
+    });
+    vertexLabelEls.forEach(item => {
+      const on = focusYear3d === -1 || focusYear3d === item.yearIdx;
+      item.el.classList.toggle('dimmed', !on);
+    });
+  }
+
+  function initThree(){
+    if (inited3d) return;
+    inited3d = true;
+
+    const wrap = document.getElementById('canvas3dWrap');
+    const W = wrap.clientWidth || 480;
+    const H = wrap.clientHeight || 480;
+
+    scene3d = new THREE.Scene();
+    camera3d = new THREE.PerspectiveCamera(40, W / H, 1, 2000);
+    updateCameraFromOrbit();
+
+    renderer3d = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer3d.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer3d.setSize(W, H);
+    wrap.appendChild(renderer3d.domElement);
+
+    labelWrap3d = document.createElement('div');
+    labelWrap3d.style.position = 'absolute';
+    labelWrap3d.style.top = '0';
+    labelWrap3d.style.left = '0';
+    labelWrap3d.style.width = '100%';
+    labelWrap3d.style.height = '100%';
+    labelWrap3d.style.pointerEvents = 'none';
+    wrap.appendChild(labelWrap3d);
+
+    scene3d.add(new THREE.AmbientLight(0x224d2e, 0.6));
+    const dir1 = new THREE.DirectionalLight(0xbfffcf, 0.75);
+    dir1.position.set(150, 200, 150);
+    scene3d.add(dir1);
+    const dir2 = new THREE.DirectionalLight(0x39ff6a, 0.4);
+    dir2.position.set(-150, -100, -100);
+    scene3d.add(dir2);
+
+    // el objeto (el tubo) gira sobre sí mismo, independiente de la cámara
+    group3d = new THREE.Group();
+    scene3d.add(group3d);
+
+    // piso fijo, no rota con el objeto: ancla la escena y refuerza la lectura "acostado"
+    const grid = new THREE.GridHelper(360, 12, 0x145c2c, 0x0a2814);
+    grid.position.y = -RMAX3D - 40;
+    scene3d.add(grid);
+
+    // arrastre del mouse = mover la cámara alrededor (órbita), no el objeto
+    wrap.addEventListener('pointerdown', (e) => {
+      isDragging3d = true;
+      camAnimTarget = null; // el usuario toma el control manual de la cámara
+      if (typeof setActiveViewBtn === 'function') setActiveViewBtn('free');
+      prevMouseX = e.clientX;
+      prevMouseY = e.clientY;
+      wrap.setPointerCapture(e.pointerId);
+    });
+    wrap.addEventListener('pointermove', (e) => {
+      if (!isDragging3d) return;
+      const dx = e.clientX - prevMouseX;
+      const dy = e.clientY - prevMouseY;
+      camTheta -= dx * 0.006;
+      camPhi += dy * 0.006;
+      camPhi = Math.max(-1.3, Math.min(1.3, camPhi));
+      updateCameraFromOrbit();
+      prevMouseX = e.clientX;
+      prevMouseY = e.clientY;
+    });
+    window.addEventListener('pointerup', () => { isDragging3d = false; });
+
+    window.addEventListener('resize', () => {
+      const w = wrap.clientWidth || 480;
+      const h = wrap.clientHeight || 480;
+      camera3d.aspect = w / h;
+      camera3d.updateProjectionMatrix();
+      renderer3d.setSize(w, h);
+    });
+
+    animate3d();
+  }
+
+  function makeLabel(text, extraClass){
+    const el = document.createElement('div');
+    el.className = 'label3d' + (extraClass ? ' ' + extraClass : '');
+    el.textContent = text;
+    el.style.opacity = '0';
+    labelWrap3d.appendChild(el);
+    return el;
+  }
+
+  function buildScene3d(){
+    buildToken++;
+    const myToken = buildToken;
+
+    // limpiar todo lo anterior del objeto (el piso vive aparte, en scene3d, y no se toca)
+    for (let i = group3d.children.length - 1; i >= 0; i--){
+      const c = group3d.children[i];
+      if (c.geometry) c.geometry.dispose();
+      if (c.material) c.material.dispose();
+      group3d.remove(c);
+    }
+    labelWrap3d.innerHTML = '';
+    segmentGroups = [];
+    ringGroups = [];
+    vertexLabelEls = [];
+    yearLabelEls = [];
+    axisLabelEls = [];
+
+    const totalLen = LAYER_GAP * (YEARS.length - 1);
+    const baseX = -totalLen / 2;
+
+    const layers = YEARS.map((_, yi) => {
+      const pts = layerPositions(data[yi]);
+      pts.forEach(p => { p.x = baseX + yi * LAYER_GAP; });
+      return pts;
+    });
+
+    const layerColors = YEARS.map((_, yi) => {
+      const t = yi / (YEARS.length - 1);
+      return COLOR_START.clone().lerp(COLOR_END, t);
+    });
+
+    // --- anillos (outline + esferas + label de año) por capa ---
+    YEARS.forEach((yearName, yi) => {
+      const g = new THREE.Group();
+      const pts = layers[yi];
+      const color = layerColors[yi];
+
+      const loopPts = pts.concat([pts[0]]);
+      const lineGeo = new THREE.BufferGeometry().setFromPoints(loopPts);
+      const lineMat = new THREE.LineBasicMaterial({ color, linewidth: 2 });
+      g.add(new THREE.Line(lineGeo, lineMat));
+
+      pts.forEach((p, vi) => {
+        const sphere = new THREE.Mesh(
+          new THREE.SphereGeometry(4, 12, 12),
+          new THREE.MeshPhongMaterial({ color, shininess: 60 })
+        );
+        sphere.position.copy(p);
+        g.add(sphere);
+
+        const lbl = makeLabel(String(data[yi][vi]), 'value-tag');
+        // el chip ya no usa el color del año (ahora siempre negro con borde verde);
+        // el desplazamiento sigue siendo chico y fijo en unidades de mundo, apenas
+        // el necesario para separar el número de la esfera sin alejarlo del vértice
+        const labelPos = new THREE.Vector3(p.x, p.y * 1.05, p.z * 1.05);
+        vertexLabelEls.push({ el: lbl, pos: labelPos, yearIdx: yi });
+
+        // etiquetas "Valor 1".."Valor 5" solo en la primera capa (el frente del tubo),
+        // ancladas cerca del borde de la figura (apenas más afuera que el radio máximo),
+        // y giran junto con el objeto para poder identificar cada punta mientras rueda
+        if (yi === 0){
+          const a = angle3d(vi);
+          const axisLbl = makeLabel(VALUES[vi], 'axis-tag');
+          const axisPos = new THREE.Vector3(
+            p.x - 12,
+            RMAX3D * 1.14 * Math.cos(a),
+            RMAX3D * 1.14 * Math.sin(a)
+          );
+          axisLabelEls.push({ el: axisLbl, pos: axisPos });
+        }
+      });
+
+      // "Año N": posición fija en el mundo, no rota con el objeto, un poco más abajo para que no se corte
+      const yLbl = makeLabel(yearName, 'year-tag');
+      const yPos = new THREE.Vector3(pts[0].x, RMAX3D * 0.85, 0);
+      yearLabelEls.push({ el: yLbl, pos: yPos });
+
+      group3d.add(g);
+      g.visible = false;
+      ringGroups.push(g);
+    });
+
+    // --- superficies laterales entre capa i y capa i+1 ---
+    for (let li = 0; li < layers.length - 1; li++){
+      const a = layers[li], b = layers[li+1];
+      const colorA = layerColors[li], colorB = layerColors[li+1];
+
+      const positions = [];
+      const colors = [];
+
+      for (let i = 0; i < N; i++){
+        const i2 = (i + 1) % N;
+        const A = a[i], B = a[i2], C = b[i2], D = b[i];
+
+        // triángulo A,B,C
+        positions.push(A.x,A.y,A.z, B.x,B.y,B.z, C.x,C.y,C.z);
+        colors.push(colorA.r,colorA.g,colorA.b, colorA.r,colorA.g,colorA.b, colorB.r,colorB.g,colorB.b);
+        // triángulo A,C,D
+        positions.push(A.x,A.y,A.z, C.x,C.y,C.z, D.x,D.y,D.z);
+        colors.push(colorA.r,colorA.g,colorA.b, colorB.r,colorB.g,colorB.b, colorB.r,colorB.g,colorB.b);
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      geo.computeVertexNormals();
+
+      const mat = new THREE.MeshPhongMaterial({
+        vertexColors: true,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.8,
+        shininess: 40,
+        flatShading: true,
+      });
+
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.visible = false;
+      group3d.add(mesh);
+      segmentGroups.push(mesh);
+    }
+
+    applyFocus3d();
+    playBuildAnimation(myToken);
+  }
+
+  function playBuildAnimation(myToken){
+    // revela año 1, luego cada tramo + el siguiente anillo, en secuencia
+    const steps = [];
+    steps.push(() => { ringGroups[0].visible = true; });
+    for (let i = 0; i < segmentGroups.length; i++){
+      steps.push(() => {
+        segmentGroups[i].visible = true;
+        ringGroups[i+1].visible = true;
+      });
+    }
+
+    let stepIdx = 0;
+    function next(){
+      if (myToken !== buildToken) return; // se pidió reconstruir de nuevo, cancelar esta corrida
+      if (stepIdx >= steps.length) return;
+      steps[stepIdx]();
+      stepIdx++;
+      setTimeout(next, 420);
+    }
+    next();
+  }
+
+  function updateLabelPositions(){
+    if (!renderer3d) return;
+    const wrap = document.getElementById('canvas3dWrap');
+    const W = wrap.clientWidth, H = wrap.clientHeight;
+    const tmp = new THREE.Vector3();
+
+    function projectAndPlace(el, worldVec, fadeByDepth){
+      worldVec.project(camera3d);
+      const visible = worldVec.z < 1;
+      // profundidad 0 (cerca) .. 1 (lejos) para atenuar lo que queda del lado
+      // opuesto del tubo y así reducir el amontonamiento de números al rotar
+      const depthFade = fadeByDepth ? Math.max(0.35, 1 - Math.max(0, worldVec.z) * 0.9) : 1;
+      el.style.opacity = visible ? String(depthFade) : '0';
+      el.style.left = ((worldVec.x * 0.5 + 0.5) * W) + 'px';
+      el.style.top = ((-worldVec.y * 0.5 + 0.5) * H) + 'px';
+    }
+
+    // vértices y etiquetas "Valor N": giran junto con el objeto
+    vertexLabelEls.forEach(item => {
+      if (!showValueNumbers3d){
+        item.el.style.opacity = '0';
+        return;
+      }
+      tmp.copy(item.pos);
+      group3d.localToWorld(tmp);
+      projectAndPlace(item.el, tmp, true);
+    });
+    axisLabelEls.forEach(item => {
+      tmp.copy(item.pos);
+      group3d.localToWorld(tmp);
+      projectAndPlace(item.el, tmp, false);
+    });
+
+    // "Año N": posición fija, no se ve afectada por la rotación del objeto
+    yearLabelEls.forEach(item => {
+      tmp.copy(item.pos);
+      projectAndPlace(item.el, tmp, false);
+    });
+  }
+
+  function animate3d(){
+    requestAnimationFrame(animate3d);
+    if (!renderer3d) return;
+    if (autoRotate3d){
+      // el objeto gira sobre su propio eje longitudinal (X), como si rodara
+      group3d.rotation.x += 0.006;
+    }
+    if (camAnimTarget){
+      camTheta += (camAnimTarget.theta - camTheta) * 0.12;
+      camPhi += (camAnimTarget.phi - camPhi) * 0.12;
+      if (Math.abs(camAnimTarget.theta - camTheta) < 0.001 && Math.abs(camAnimTarget.phi - camPhi) < 0.001){
+        camTheta = camAnimTarget.theta;
+        camPhi = camAnimTarget.phi;
+        camAnimTarget = null;
+      }
+    }
+    updateCameraFromOrbit();
+    updateLabelPositions();
+    renderer3d.render(scene3d, camera3d);
+  }
+
+  function render3d(){
+    initThree();
+    buildScene3d();
+  }
+
+  document.getElementById('toggleRotateBtn').addEventListener('click', (e) => {
+    autoRotate3d = !autoRotate3d;
+    e.target.textContent = autoRotate3d ? '⏸ Pausar giro' : '▶ Reanudar giro';
+  });
+  document.getElementById('replayBuildBtn').addEventListener('click', () => {
+    ringGroups.forEach(g => g.visible = false);
+    segmentGroups.forEach(m => m.visible = false);
+    playBuildAnimation(buildToken);
+  });
+
+  document.getElementById('toggleNumbersBtn').addEventListener('click', (e) => {
+    showValueNumbers3d = !showValueNumbers3d;
+    e.target.textContent = showValueNumbers3d ? '# Ocultar números' : '# Mostrar números';
+    e.target.classList.toggle('active', !showValueNumbers3d);
+  });
+
+  function setActiveViewBtn(view){
+    currentView3d = view;
+    document.getElementById('view2dYearBtn').classList.toggle('active', view === 'year');
+    document.getElementById('view2dTimeBtn').classList.toggle('active', view === 'time');
+    document.getElementById('viewFreeBtn').classList.toggle('active', view === 'free');
+  }
+
+  function pauseRotationForView(){
+    autoRotate3d = false;
+    document.getElementById('toggleRotateBtn').textContent = '▶ Reanudar giro';
+  }
+
+  // "Por año": cámara mirando derecho por el eje del tubo, como si viéramos
+  // el pentágono de frente — igual que el gráfico 2D "Por año". Se aísla un
+  // año a la vez (si no había ninguno aislado, arranca en Año 1) para que se
+  // lea como un único pentágono, no como cuatro superpuestos.
+  document.getElementById('view2dYearBtn').addEventListener('click', () => {
+    pauseRotationForView();
+    group3d.rotation.x = 0;
+    flyCameraTo(-Math.PI / 2, 0.05);
+    if (focusYear3d === -1) focusYear3d = 0;
+    buildLegend();
+    applyFocus3d();
+    setActiveViewBtn('year');
+  });
+
+  // "En el tiempo": cámara de costado, perpendicular al eje del tubo, para que
+  // los años queden en fila horizontal — como el eje de tiempo del gráfico de
+  // líneas. Se muestran todos los años a la vez para ver la evolución completa.
+  document.getElementById('view2dTimeBtn').addEventListener('click', () => {
+    pauseRotationForView();
+    group3d.rotation.x = 0;
+    flyCameraTo(0, 0);
+    focusYear3d = -1;
+    buildLegend();
+    applyFocus3d();
+    setActiveViewBtn('time');
+  });
+
+  // vuelve a la órbita libre por defecto y reanuda el giro automático
+  document.getElementById('viewFreeBtn').addEventListener('click', () => {
+    autoRotate3d = true;
+    document.getElementById('toggleRotateBtn').textContent = '⏸ Pausar giro';
+    flyCameraTo(DEFAULT_CAM_THETA, DEFAULT_CAM_PHI);
+    setActiveViewBtn('free');
+  });
+
+  buildLegend();
+
+  // inicializar three.js recién cuando se entra a la pestaña 3D por primera vez
+  const cyl3dTabBtn = document.querySelector('.tab[data-tab="cyl3d"]');
+  cyl3dTabBtn.addEventListener('click', () => {
+    if (!inited3d) render3d();
+  });
+
+  // ===================== TABLA EDITABLE =====================
+  const table = document.getElementById('dataTable');
+
+  function buildTable(){
+    table.innerHTML = '';
+    const thead = document.createElement('thead');
+    const headRow = document.createElement('tr');
+    headRow.appendChild(document.createElement('th'));
+    YEARS.forEach(y => {
+      const th = document.createElement('th');
+      th.textContent = y;
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    VALUES.forEach((valName, vi) => {
+      const tr = document.createElement('tr');
+      const th = document.createElement('th');
+      th.textContent = valName;
+      tr.appendChild(th);
+
+      YEARS.forEach((_, yi) => {
+        const td = document.createElement('td');
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'cell';
+        input.min = '0';
+        input.max = String(MAX);
+        input.step = '1';
+        input.value = data[yi][vi];
+        input.dataset.yearIndex = yi;
+        input.dataset.valIndex = vi;
+        input.addEventListener('change', onCellChange);
+        input.addEventListener('blur', onCellChange);
+        td.appendChild(input);
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+  }
+
+  function onCellChange(e){
+    const input = e.target;
+    const yi = Number(input.dataset.yearIndex);
+    const vi = Number(input.dataset.valIndex);
+    const v = clamp(input.value);
+    input.value = v;
+    data[yi][vi] = v;
+    saveData();
+    renderPentagon();
+    renderLine();
+    if (inited3d) buildScene3d();
+  }
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    data = DEFAULT_DATA.map(r => r.slice());
+    saveData();
+    buildTable();
+    renderPentagon();
+    renderLine();
+    if (inited3d) buildScene3d();
+  });
+
+  // ===================== INIT =====================
+  buildTable();
+  renderPentagon();
+  renderLine();
+})();
+</script>
+
+</body>
+</html>
