@@ -1,0 +1,328 @@
+/* ======================================================================
+   PANEL DE VARIABLES — TODO LO QUE VAS A QUERER TOCAR ESTÁ ACÁ ARRIBA.
+   No hace falta bajar al resto del CSS para ajustar la estética.
+   ====================================================================== */
+:root{
+
+  /* --- COLOR ------------------------------------------------------- */
+  --color-fondo:            #000000;   /* fondo general de la página */
+  --color-panel:            #050a06;   /* fondo interno de la consola */
+  --color-panel-borde:      #123018;   /* borde de la ventana de consola */
+  --color-titlebar:         #08130a;   /* barra de título de la ventana */
+
+  --color-verde-principal:  #33ff5b;   /* texto principal, comandos */
+  --color-verde-brillante:  #00ff41;   /* acentos, glow, cursor, hover */
+  --color-verde-apagado:    #1f7a35;   /* texto secundario / comentarios */
+  --color-verde-linea:      #0d2f14;   /* líneas divisorias sutiles */
+  --color-blanco:           #eafff0;   /* contraste puntual (no puro #fff) */
+  --color-error:            #ff4d4d;   /* reservado para estados de error */
+
+  --opacidad-lluvia:        0.10;      /* opacidad del fondo tipo "matrix rain" */
+  --proporcion-logos-ia:    0.05;      /* de 0 a 1: qué parte de las gotas son logos de IA en vez de caracteres */
+  --escala-logo-ia:         2.4;       /* tamaño del logo = tamaño de fuente de la lluvia × este número */
+  --opacidad-logos-ia:      0.55;      /* opacidad de los logos dentro de la lluvia (bajo = se mimetizan más) */
+
+  /* --- TIPOGRAFÍA ---------------------------------------------------- */
+  --fuente-mono: 'JetBrains Mono', 'Courier New', monospace;
+
+  --tamano-base:        16px;   /* tamaño base del cuerpo */
+  --tamano-prompt:      1rem;   /* línea de comando */
+  --tamano-menu-item:   1rem;   /* ítems del listado de comandos */
+  --tamano-titulo-seccion: 1.75rem; /* título al abrir una sección */
+  --tamano-descripcion: 0.95rem;    /* texto descriptivo de cada sección */
+  --tamano-etiqueta:    0.75rem;    /* etiquetas pequeñas (footer) */
+  --tamano-titulo-ventana: 0.85rem; /* título de la infografía, en el marco de la consola */
+
+  --interlineado-base:  1.6;
+  --tracking-etiqueta:  0.08em; /* espaciado de letras solo para etiquetas cortas */
+
+  /* --- ESTRUCTURA / TAMAÑOS ------------------------------------------ */
+  --ancho-consola:      880px;  /* ancho máximo de la ventana de terminal */
+  --alto-consola:       620px;  /* alto de la ventana de terminal */
+  --radio-borde:        6px;    /* redondeo de la ventana (0 = terminal "dura") */
+  --padding-consola:    2rem;   /* padding interno del cuerpo de la consola */
+  --grosor-borde:       1px;
+
+  /* --- ANIMACIÓN ------------------------------------------------------ */
+  --velocidad-tipeo:      38ms;  /* ms por caracter al "escribir" un comando */
+  --velocidad-cursor:     900ms; /* parpadeo del cursor */
+  --duracion-transicion:  420ms; /* transición entre menú y panel de sección */
+  --duracion-glow:        2.4s;  /* pulso de resplandor del encabezado */
+}
+
+*{ box-sizing: border-box; }
+
+html, body{
+  margin:0;
+  padding:0;
+  background: var(--color-fondo);
+  color: var(--color-verde-principal);
+  font-family: var(--fuente-mono);
+  font-size: var(--tamano-base);
+  line-height: var(--interlineado-base);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Reduce motion: respetamos la preferencia del sistema */
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ======================================================================
+   FONDO — lluvia de caracteres, muy tenue, detrás de la consola.
+   ====================================================================== */
+#lluvia{
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: var(--opacidad-lluvia);
+  pointer-events: none;
+}
+
+/* ======================================================================
+   LAYOUT GENERAL
+   ====================================================================== */
+.escenario{
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+/* ======================================================================
+   VENTANA DE CONSOLA
+   ====================================================================== */
+.consola{
+  width: 100%;
+  max-width: var(--ancho-consola);
+  height: var(--alto-consola);
+  max-height: 90vh;
+  background: var(--color-panel);
+  border: var(--grosor-borde) solid var(--color-panel-borde);
+  border-radius: var(--radio-borde);
+  box-shadow: 0 0 40px rgba(0,255,65,0.08), 0 0 0 1px rgba(0,255,65,0.03) inset;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.consola__barra{
+  background: var(--color-titlebar);
+  border-bottom: var(--grosor-borde) solid var(--color-panel-borde);
+  padding: 0.7rem 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+.consola__punto{
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--color-verde-apagado);
+  opacity: 0.5;
+  margin-top: 0.3em;
+  flex-shrink: 0;
+}
+
+.consola__titulo{
+  margin-left: 0.5rem;
+  font-size: var(--tamano-titulo-ventana);
+  color: var(--color-verde-apagado);
+  line-height: 1.4;
+}
+
+.consola__cuerpo{
+  flex: 1;
+  padding: var(--padding-consola);
+  overflow-y: auto;
+  position: relative;
+}
+
+.consola__cuerpo::-webkit-scrollbar{ width: 8px; }
+.consola__cuerpo::-webkit-scrollbar-thumb{ background: var(--color-panel-borde); border-radius: 4px; }
+.consola__cuerpo::-webkit-scrollbar-track{ background: transparent; }
+
+/* ======================================================================
+   LÍNEA DE PROMPT (simulación de cmd)
+   ====================================================================== */
+.prompt{
+  display: flex;
+  align-items: baseline;
+  gap: 0.5ch;
+  font-size: var(--tamano-prompt);
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  color: var(--color-verde-brillante);
+}
+
+.prompt__ruta{ white-space: nowrap; }
+.prompt__comando{ color: var(--color-blanco); }
+
+.cursor{
+  display: inline-block;
+  width: 0.55ch;
+  height: 1em;
+  background: var(--color-verde-brillante);
+  animation: parpadeo var(--velocidad-cursor) steps(1) infinite;
+  vertical-align: text-bottom;
+}
+
+@keyframes parpadeo{
+  0%, 49%{ opacity: 1; }
+  50%, 100%{ opacity: 0; }
+}
+
+/* ======================================================================
+   VISTA: MENÚ
+   ====================================================================== */
+.vista{
+  transition: opacity var(--duracion-transicion) ease, transform var(--duracion-transicion) ease;
+}
+
+.vista[hidden]{ display: none; }
+
+.vista--saliendo{ opacity: 0; transform: translateY(6px); }
+.vista--entrando{ opacity: 0; transform: translateY(6px); }
+
+.menu__intro{
+  color: var(--color-verde-apagado);
+  font-size: var(--tamano-descripcion);
+  margin: 0 0 1.5rem 0;
+}
+
+.menu__lista{
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.menu__item{
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-left: 2px solid transparent;
+  color: var(--color-verde-principal);
+  font-family: var(--fuente-mono);
+  font-size: var(--tamano-menu-item);
+  line-height: 1.5;
+  text-align: left;
+  padding: 0.85rem 0.75rem;
+  cursor: pointer;
+  transition: background var(--duracion-transicion) ease, border-color var(--duracion-transicion) ease, color var(--duracion-transicion) ease;
+}
+
+.menu__item:hover,
+.menu__item:focus-visible{
+  background: rgba(0,255,65,0.06);
+  border-left-color: var(--color-verde-brillante);
+  color: var(--color-blanco);
+  outline: none;
+}
+
+.menu__item:focus-visible{
+  box-shadow: 0 0 0 1px var(--color-verde-brillante) inset;
+}
+
+.menu__indice{
+  color: var(--color-verde-apagado);
+  flex-shrink: 0;
+  padding-top: 0.1em;
+}
+
+.menu__item:hover .menu__indice,
+.menu__item:focus-visible .menu__indice{
+  color: var(--color-verde-brillante);
+}
+
+.menu__nombre{ flex: 1; }
+
+.menu__flecha{
+  opacity: 0;
+  flex-shrink: 0;
+  padding-top: 0.1em;
+  transition: opacity var(--duracion-transicion) ease;
+}
+
+.menu__item:hover .menu__flecha,
+.menu__item:focus-visible .menu__flecha{
+  opacity: 1;
+}
+
+/* ======================================================================
+   VISTA: SECCIÓN ABIERTA
+   ====================================================================== */
+.seccion__volver{
+  background: transparent;
+  border: none;
+  color: var(--color-verde-apagado);
+  font-family: var(--fuente-mono);
+  font-size: var(--tamano-etiqueta);
+  letter-spacing: var(--tracking-etiqueta);
+  cursor: pointer;
+  padding: 0.3rem 0;
+  margin-bottom: 1.25rem;
+  transition: color var(--duracion-transicion) ease;
+}
+
+.seccion__volver:hover,
+.seccion__volver:focus-visible{ color: var(--color-verde-brillante); outline: none; }
+
+.seccion__titulo{
+  font-size: var(--tamano-titulo-seccion);
+  font-weight: 600;
+  color: var(--color-blanco);
+  margin: 0 0 0.5rem 0;
+  text-shadow: 0 0 18px rgba(0,255,65,0.35);
+  animation: resplandor var(--duracion-glow) ease-in-out infinite alternate;
+}
+
+@keyframes resplandor{
+  from{ text-shadow: 0 0 10px rgba(0,255,65,0.25); }
+  to{ text-shadow: 0 0 22px rgba(0,255,65,0.5); }
+}
+
+.seccion__descripcion{
+  font-size: var(--tamano-descripcion);
+  color: var(--color-verde-apagado);
+  max-width: 60ch;
+  margin: 0 0 1.75rem 0;
+}
+
+.grafico-placeholder{
+  border: 1px dashed var(--color-panel-borde);
+  border-radius: 4px;
+  padding: 2.5rem 1.5rem;
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--color-verde-apagado);
+  font-size: var(--tamano-etiqueta);
+  letter-spacing: var(--tracking-etiqueta);
+}
+
+/* ======================================================================
+   PIE DE VENTANA
+   ====================================================================== */
+.consola__pie{
+  border-top: var(--grosor-borde) solid var(--color-panel-borde);
+  padding: 0.5rem 1rem;
+  font-size: var(--tamano-etiqueta);
+  color: var(--color-verde-apagado);
+  display: flex;
+  justify-content: space-between;
+  flex-shrink: 0;
+}

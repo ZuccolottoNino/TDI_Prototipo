@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Infografía // Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<canvas id="lluvia"></canvas>
+
+<div class="escenario">
+  <div class="consola" role="application" aria-label="Infografía interactiva estilo terminal">
+
+    <div class="consola__barra">
+      <span class="consola__punto"></span>
+      <span class="consola__punto"></span>
+      <span class="consola__punto"></span>
+      <span class="consola__titulo" id="titulo-ventana">¿Pueden las IA reemplazar programadores?</span>
+    </div>
+
+    <div class="consola__cuerpo">
+
+      <div class="prompt">
+        <span class="prompt__ruta">C:\INFOGRAFIA&gt;</span>
+        <span class="prompt__comando" id="prompt-texto"></span>
+        <span class="cursor" id="prompt-cursor"></span>
+      </div>
+
+      <!-- VISTA 1: MENÚ PRINCIPAL -->
+      <section class="vista" id="vista-menu">
+        <p class="menu__intro">accesos disponibles — seleccioná un archivo para ejecutarlo</p>
+        <ul class="menu__lista" id="lista-menu"></ul>
+      </section>
+
+      <!-- VISTA 2: CONTENIDO DE SECCIÓN (se completa dinámicamente) -->
+      <section class="vista" id="vista-seccion" hidden>
+        <button class="seccion__volver" id="boton-volver">&lt; cd .. (volver al menú)</button>
+        <h1 class="seccion__titulo" id="seccion-titulo"></h1>
+        <p class="seccion__descripcion" id="seccion-descripcion"></p>
+        <div class="grafico-placeholder" id="seccion-grafico">
+          [ acá va el gráfico interactivo de esta sección ]
+        </div>
+      </section>
+
+    </div>
+
+    <div class="consola__pie">
+      <span id="pie-estado">listo</span>
+      <span>UTF-8</span>
+    </div>
+
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
