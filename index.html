@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Infografía // Terminal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <canvas id="lluvia"></canvas>
+
+  <div class="escenario">
+    <div class="consola" role="application" aria-label="Infografía interactiva estilo terminal">
+
+      <div class="consola__barra">
+        <div class="consola__barra-izq">
+          <span class="consola__punto"></span>
+          <span class="consola__punto"></span>
+          <span class="consola__punto"></span>
+          <span class="consola__titulo" id="titulo-ventana">¿Pueden las IA reemplazar programadores?</span>
+        </div>
+        <div class="consola__barra-der">
+          <button class="consola__btn-intro" id="boton-intro" aria-label="Ver introducción" title="Ver introducción sobre Vibe Coding" hidden>// info</button>
+          <button class="consola__cruz-top" id="boton-cruz-top" aria-label="Volver a la página principal" title="Cerrar sección / Volver al menú principal">✕</button>
+        </div>
+      </div>
+
+      <div class="consola__cuerpo">
+
+        <form class="prompt" id="prompt-form" autocomplete="off" hidden>
+          <label for="prompt-input" class="prompt__ruta" id="prompt-ruta">C:\INFOGRAFIA&gt;</label>
+          <div class="prompt__linea-input" id="prompt-linea-input">
+            <input 
+              type="text" 
+              id="prompt-input" 
+              class="prompt__input" 
+              autocomplete="off" 
+              autocorrect="off" 
+              autocapitalize="off" 
+              spellcheck="false"
+              aria-label="Consola de comandos interactiva"
+            >
+            <span class="cursor" id="prompt-cursor"></span>
+          </div>
+          <div class="prompt__error-msg" id="prompt-error-msg" aria-live="polite"></div>
+        </form>
+
+        <!-- VISTA 0: INTRODUCCIÓN INTERACTIVA -->
+        <section class="vista vista--intro" id="vista-intro">
+          <div class="intro__encabezado">
+            <span class="intro__badge">[ MÓDULO // INTRODUCCIÓN ]</span>
+            <span class="intro__version">SYS_INIT.EXE // v2.4</span>
+          </div>
+
+          <div class="intro__cuerpo">
+            <h1 class="intro__titulo">EL FENÓMENO DEL VIBE CODING</h1>
+
+            <p class="intro__parrafo">
+              El <strong>Vibe Coding</strong> es una nueva forma de desarrollar software que utiliza herramientas de inteligencia artificial para generar código a partir de instrucciones escritas en lenguaje natural. En lugar de escribir todo el código manualmente, el usuario le indica a la IA qué quiere lograr y luego revisa, prueba y modifica el resultado hasta obtener lo que necesita. A raiz de esto es que nos preguntamos:
+            </p>
+
+            <div class="intro__pregunta-box">
+              <span class="intro__pregunta-glifo">?</span>
+              <h2 class="intro__pregunta-texto">¿Pueden las IA reemplazar programadores?</h2>
+            </div>
+          </div>
+
+          <!-- CONSOLA INTERACTIVA PARA EL COMANDO RUN -->
+          <div class="intro__terminal-box" id="intro-terminal-box">
+            <div class="intro__terminal-top">
+              <span class="intro__punto-term"></span>
+              <span class="intro__terminal-etiqueta">consola de acceso al sistema</span>
+              <span class="intro__terminal-estado">ESPERANDO INSTRUCCIÓN</span>
+            </div>
+
+            <div class="intro__instruccion">
+              <span class="intro__instruccion-prompt">&gt;</span>
+              <span>Escribí en la consola el comando <span class="intro__chip-comando" id="chip-run" title="Click para autocompletar">run</span> y presioná <kbd class="intro__kbd">ENTER</kbd> para acceder a la infografía.</span>
+            </div>
+
+            <form class="intro__form" id="intro-form" autocomplete="off">
+              <label for="intro-input" class="intro__label-prompt">C:\INFOGRAFIA&gt;</label>
+              <div class="intro__input-wrapper">
+                <input 
+                  type="text" 
+                  id="intro-input" 
+                  class="intro__input" 
+                  placeholder="escribí run acá..." 
+                  autocomplete="off" 
+                  autocorrect="off" 
+                  autocapitalize="off" 
+                  spellcheck="false"
+                  aria-label="Escribí run para acceder a la infografía"
+                  autofocus
+                >
+                <button type="submit" class="intro__boton-ejecutar" id="intro-btn-ejecutar" title="Ejecutar comando">
+                  <span>EJECUTAR</span>
+                  <span class="intro__flecha">↵</span>
+                </button>
+              </div>
+            </form>
+
+            <div class="intro__consola-salida" id="intro-salida" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <!-- VISTA 1: MENÚ PRINCIPAL -->
+        <section class="vista" id="vista-menu" hidden>
+          <p class="menu__intro">comandos disponibles — escribí en la consola el comando para ingresar a cada sección:</p>
+          <ul class="menu__lista" id="lista-menu"></ul>
+        </section>
+
+        <!-- VISTA 2: CONTENIDO DE SECCIÓN (se completa dinámicamente) -->
+        <section class="vista" id="vista-seccion" hidden>
+          <h1 class="seccion__titulo" id="seccion-titulo"></h1>
+          <p class="seccion__descripcion" id="seccion-descripcion"></p>
+          <!-- VENTANA // README DINÁMICA CON GATEWAY OBLIGATORIO -->
+          <div class="seccion__readme" id="seccion-contexto" role="region" aria-label="Documentación // README"></div>
+
+          <!-- CONTENEDOR DEL GRÁFICO CON PROTOCOLO DE BLOQUEO OBLIGATORIO -->
+          <div class="grafico-wrapper" id="seccion-grafico-wrapper">
+            <div class="grafico-bloqueo-overlay" id="seccion-grafico-bloqueo" aria-live="polite">
+              <div class="grafico-bloqueo-card">
+                <div class="grafico-bloqueo-badge">[ PROTOCOLO // AUDITORÍA OBLIGATORIA ]</div>
+                <div class="grafico-bloqueo-icono" aria-hidden="true">🔒</div>
+                <div class="grafico-bloqueo-titulo">VISUALIZACIÓN INTERACTIVA EN ESPERA</div>
+                <p class="grafico-bloqueo-desc">
+                  Por norma de auditoría en <em>Vibe Coding</em>, es obligatorio revisar la documentación de seguridad en <strong>// README</strong> antes de interactuar con las métricas del gráfico.
+                </p>
+                <button class="grafico-bloqueo-btn" id="btn-ir-readme" type="button">
+                  ↑ REVISAR // README Y CONFIRMAR LECTURA
+                </button>
+              </div>
+            </div>
+            <div class="grafico-placeholder" id="seccion-grafico">
+              [ acá va el gráfico interactivo de esta sección ]
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <div class="consola__pie">
+        <span id="pie-estado">listo</span>
+        <span>UTF-8</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== MODAL: GRÁFICO 3D (conjunción de "Calidad vs Tiempo" y "El fin del teclado") ===== -->
+  <div class="modal-3d" id="modal-3d" hidden>
+    <div class="modal-3d__ventana" role="dialog" aria-label="Gráfico 3D">
+      <div class="modal-3d__barra">
+        <span class="consola__punto"></span>
+        <span class="consola__punto"></span>
+        <span class="consola__punto"></span>
+        <span class="consola__titulo">grafico_3d.exe — conjunción de años</span>
+        <button class="modal-3d__cerrar" id="modal-3d-cerrar" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-3d__cuerpo">
+        <div class="legend3d" id="legend3d"></div>
+        <div class="canvas3d-wrap" id="canvas3dWrap"></div>
+        <div class="controls3d">
+          <button id="toggleRotateBtn">⏸ Pausar giro</button>
+          <button id="replayBuildBtn">↻ Reconstruir</button>
+          <button id="toggleNumbersBtn"># Ocultar números</button>
+          <button id="view2dYearBtn">▭ Vista: por año</button>
+          <button id="view2dTimeBtn">📈 Vista: en el tiempo</button>
+          <button id="viewFreeBtn">↺ Vista libre</button>
+        </div>
+        <p class="footer-note">Arrastrá con el mouse para mover la cámara · Esc para cerrar</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="graficos.js"></script>
+  <script src="script.js"></script>
+</body>
+
+</html>
